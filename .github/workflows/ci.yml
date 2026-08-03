@@ -1,0 +1,442 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+  DOTNET_VERSION: "10.0.302"
+  NODE_VERSION: "22.22.2"
+
+jobs:
+  backend:
+    name: Backend build and tests
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out source
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Set up Node.js for application fixtures
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore
+        run: dotnet restore AbodeToWeb.sln -p:NuGetAudit=true -p:NuGetAuditMode=all
+
+      - name: Verify formatting
+        run: dotnet format AbodeToWeb.sln --verify-no-changes --no-restore --verbosity minimal
+
+      - name: Build
+        run: dotnet build AbodeToWeb.sln --configuration Release --no-restore
+
+      - name: Test
+        run: >-
+          dotnet test AbodeToWeb.sln
+          --configuration Release
+          --no-build
+          --logger "trx;LogFilePrefix=abode-to-web"
+          --collect "XPlat Code Coverage"
+          --results-directory artifacts/test-results
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: backend-test-results
+          path: artifacts/test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
+  frontend:
+    name: Frontend lint, tests, and build
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: src/AbodeToWeb.Web
+    steps:
+      - name: Check out source
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/AbodeToWeb.Web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test -- --run
+
+      - name: Build
+        run: npm run build
+
+  dependency-audit:
+    name: Dependency audit
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Audit NuGet dependencies
+        run: |
+          dotnet restore AbodeToWeb.sln -p:NuGetAudit=true -p:NuGetAuditMode=all -p:NuGetAuditLevel=moderate
+          dotnet package list --project AbodeToWeb.sln --vulnerable --include-transitive --no-restore
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/AbodeToWeb.Web/package-lock.json
+
+      - name: Audit npm dependencies
+        working-directory: src/AbodeToWeb.Web
+        run: |
+          npm ci --ignore-scripts
+          npm audit --audit-level=high
+          npm audit --omit=dev --audit-level=high
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Scan with Gitleaks
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+
+  operations:
+    name: PowerShell and documentation checks
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Parse PowerShell 7 scripts
+        shell: pwsh
+        run: |
+          $failed = $false
+          Get-ChildItem scripts -File |
+            Where-Object Extension -in '.ps1', '.psm1' |
+            ForEach-Object {
+              $tokens = $null
+              $errors = $null
+              [Management.Automation.Language.Parser]::ParseFile(
+                $_.FullName,
+                [ref] $tokens,
+                [ref] $errors
+              ) | Out-Null
+              foreach ($error in $errors) {
+                Write-Error "$($_.FullName):$($error.Extent.StartLineNumber): $($error.Message)" -ErrorAction Continue
+                $failed = $true
+              }
+            }
+          if ($failed) { throw 'One or more PowerShell files did not parse.' }
+
+      - name: Test release workflow promotion policy
+        shell: pwsh
+        run: ./tests/AbodeToWeb.ScriptTests/ReleaseWorkflowPolicy.Tests.ps1
+
+      - name: Test application-secret ACL repair boundaries
+        shell: pwsh
+        run: ./tests/AbodeToWeb.ScriptTests/ApplicationSecretAclRepair.Tests.ps1 -ServiceName Schedule
+
+      - name: Exercise safe operations helpers
+        shell: pwsh
+        run: |
+          Import-Module ./scripts/AbodeToWeb.Common.psm1 -Force
+          Import-Module ./scripts/Cloudflared.Common.psm1 -Force
+          Import-Module ./scripts/AbodeToWeb.RuntimeAccount.psm1 -Force
+          $layout = Get-AbodeToWebLayout -DataRoot 'C:\ProgramData\AbodeToWeb'
+          if ($layout.ConfigPath -ne 'C:\ProgramData\AbodeToWeb\config\abode-to-web.yaml') {
+            throw 'Unexpected data layout.'
+          }
+          if ((Test-AbodeToWebPublicHostname 'Sample-App.Example.com.') -ne 'sample-app.example.com') {
+            throw 'Hostname normalization failed.'
+          }
+          $currentSid = Get-AbodeToWebCurrentUserSid
+          $normalizedSids = @(ConvertTo-AbodeToWebWindowsSidList -Sid @($currentSid, "$currentSid;$currentSid") -RequireUserAccount)
+          if ($normalizedSids.Count -ne 1 -or $normalizedSids[0] -ne $currentSid) {
+            throw 'Dashboard administrator SID normalization failed.'
+          }
+          try {
+            ConvertTo-AbodeToWebWindowsSidList -Sid 'S-1-5-32-544' -RequireUserAccount | Out-Null
+            throw 'A Windows group SID was accepted as a dashboard administrator.'
+          }
+          catch {
+            if ($_.Exception.Message -eq 'A Windows group SID was accepted as a dashboard administrator.') { throw }
+          }
+          $runtimeDiagnostic = Test-AbodeToWebRuntimeAccount `
+            -DataRoot (Join-Path $env:RUNNER_TEMP 'AbodeToWebRuntimeDiagnostic') `
+            -ServiceName DwRuntimeCiFixture `
+            -AccountName DwRuntimeCiFixture
+          if ($runtimeDiagnostic.accountPresent -or
+              $runtimeDiagnostic.processLogonSelfTest -ne 'not-run-server-runtime-self-test-required') {
+            throw 'The runtime-identity diagnostic unexpectedly mutated state or reported an invalid self-test status.'
+          }
+          Assert-AbodeToWebDashboardUri 'http://127.0.0.1:4545/' | Out-Null
+          try {
+            Assert-AbodeToWebDashboardUri 'http://127.0.0.1:4580/' | Out-Null
+            throw 'Gateway URI was accepted as the dashboard.'
+          }
+          catch {
+            if ($_.Exception.Message -eq 'Gateway URI was accepted as the dashboard.') { throw }
+          }
+          try {
+            Test-AbodeToWebPublicHostname '*.example.com' | Out-Null
+            throw 'Wildcard hostname was accepted.'
+          }
+          catch {
+            if ($_.Exception.Message -eq 'Wildcard hostname was accepted.') { throw }
+          }
+          try {
+            Test-AbodeToWebHttpEndpoint -Uri 'http://example.com/' -UseDefaultCredentials | Out-Null
+            throw 'Default Windows credentials were permitted for a non-loopback URI.'
+          }
+          catch {
+            if ($_.Exception.Message -eq 'Default Windows credentials were permitted for a non-loopback URI.') { throw }
+          }
+
+      - name: Exercise exact secret ACL and runtime-envelope validation
+        shell: pwsh
+        run: |
+          Import-Module ./scripts/AbodeToWeb.Common.psm1 -Force
+          Import-Module ./scripts/AbodeToWeb.RuntimeAccount.psm1 -Force
+          $fixture = Join-Path $env:RUNNER_TEMP "AbodeToWebSecurity-$([guid]::NewGuid().ToString('N'))"
+          try {
+            New-Item -ItemType Directory -Path "$fixture/secrets/child" -Force | Out-Null
+            Set-Content -LiteralPath "$fixture/secrets/child/value.txt" -Value fixture -Encoding utf8NoBOM
+            & "$env:SystemRoot/System32/icacls.exe" "$fixture/secrets" '/grant' '*S-1-1-0:(OI)(CI)F' | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Could not create the broad-ACL fixture.' }
+            $currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
+            Set-AbodeToWebPrivateAcl -Path "$fixture/secrets" -ServiceSid $currentIdentity.Name -ServiceAccess Read
+            $expectedSids = @('S-1-5-18', 'S-1-5-32-544', $currentIdentity.User.Value) | Sort-Object -Unique
+            foreach ($path in @("$fixture/secrets", "$fixture/secrets/child", "$fixture/secrets/child/value.txt")) {
+              $acl = Get-Acl -LiteralPath $path
+              $actualSids = @($acl.Access | Where-Object AccessControlType -eq Allow | ForEach-Object {
+                $_.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value
+              } | Sort-Object -Unique)
+              if (-not $acl.AreAccessRulesProtected -or (Compare-Object $expectedSids $actualSids -CaseSensitive)) {
+                throw "Secret ACL was not reset exactly: $path"
+              }
+            }
+
+            $runtimeModule = Get-Module AbodeToWeb.RuntimeAccount
+            $invalidEnvelopes = @(
+              '{"Version":1,"protection":"dpapi-local-machine-v1","username":"AbodeToWebRuntime","domain":".","protectedPassword":"AQ=="}',
+              '{"version":"1","protection":"dpapi-local-machine-v1","username":"AbodeToWebRuntime","domain":".","protectedPassword":"AQ=="}',
+              '{"version":1,"version":1,"protection":"dpapi-local-machine-v1","username":"AbodeToWebRuntime","domain":".","protectedPassword":"AQ=="}'
+            )
+            $index = 0
+            foreach ($json in $invalidEnvelopes) {
+              $index++
+              $path = "$fixture/envelope-$index.json"
+              Set-Content -LiteralPath $path -Value $json -Encoding utf8NoBOM
+              try {
+                & $runtimeModule {
+                  param($credentialPath)
+                  Read-AbodeToWebRuntimeCredentialPassword -CredentialPath $credentialPath -AccountName AbodeToWebRuntime
+                } $path | Out-Null
+                throw "Invalid runtime envelope $index was accepted."
+              }
+              catch {
+                if ($_.Exception.Message -eq "Invalid runtime envelope $index was accepted.") { throw }
+              }
+            }
+          }
+          finally {
+            if (Test-Path -LiteralPath $fixture) {
+              & "$env:SystemRoot/System32/icacls.exe" $fixture '/reset' '/T' '/C' | Out-Null
+              Remove-Item -LiteralPath $fixture -Recurse -Force
+            }
+          }
+
+      - name: Reject untrusted runtime-account ownership markers
+        shell: pwsh
+        run: |
+          Import-Module ./scripts/AbodeToWeb.Common.psm1 -Force
+          Import-Module ./scripts/AbodeToWeb.RuntimeAccount.psm1 -Force
+          if (-not (Test-AbodeToWebAdministrator)) {
+            throw 'The Windows runner must be elevated for the ACL trust regression.'
+          }
+          $fixture = Join-Path $env:RUNNER_TEMP "AbodeToWebMarker-$([guid]::NewGuid().ToString('N'))"
+          $programDataFixture = Join-Path $fixture 'ProgramData'
+          $dataRoot = Join-Path $programDataFixture 'AbodeToWeb'
+          $stateRoot = Join-Path $dataRoot 'state'
+          $markerPath = Join-Path $stateRoot 'runtime-account.json'
+          $currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
+          try {
+            New-Item -ItemType Directory -Path $stateRoot -Force | Out-Null
+            Set-AbodeToWebExactDirectoryAcl `
+              -Path $programDataFixture `
+              -ServiceSid $currentIdentity.Name `
+              -ServiceAccess Read
+            Set-AbodeToWebExactDirectoryAcl `
+              -Path $dataRoot `
+              -ServiceSid 'NT SERVICE\Schedule' `
+              -ServiceAccess Modify
+            Set-AbodeToWebExactDirectoryAcl `
+              -Path $stateRoot `
+              -ServiceSid 'NT SERVICE\Schedule' `
+              -ServiceAccess Modify
+
+            # A repeat installation legitimately leaves the restricted runtime user
+            # a non-inheriting traverse/read grant on the data root.
+            & "$env:SystemRoot/System32/icacls.exe" `
+              $dataRoot '/grant:r' "*$($currentIdentity.User.Value):(RX)" | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Could not create the runtime traversal fixture.' }
+
+            [ordered]@{
+              version = 1
+              managedBy = 'AbodeToWeb'
+              accountName = 'AbodeToWebRuntime'
+              accountSid = $currentIdentity.User.Value
+              createdAtUtc = [DateTimeOffset]::UtcNow.ToString('O')
+            } | ConvertTo-Json -Compress |
+              Set-Content -LiteralPath $markerPath -Encoding utf8NoBOM
+            Set-AbodeToWebRuntimeMarkerAcl -MarkerPath $markerPath
+            if ((Get-AbodeToWebRuntimeAccountMarker -MarkerPath $markerPath).accountSid -ne
+                $currentIdentity.User.Value) {
+              throw 'A trusted runtime-account marker did not round-trip.'
+            }
+
+            & "$env:SystemRoot/System32/icacls.exe" `
+              $markerPath '/grant' '*S-1-1-0:(F)' | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Could not tamper with the marker fixture.' }
+            try {
+              Get-AbodeToWebRuntimeAccountMarker -MarkerPath $markerPath | Out-Null
+              throw 'A marker writable by Everyone was accepted.'
+            }
+            catch {
+              if ($_.Exception.Message -eq 'A marker writable by Everyone was accepted.') { throw }
+            }
+
+            Set-AbodeToWebRuntimeMarkerAcl -MarkerPath $markerPath
+            & "$env:SystemRoot/System32/icacls.exe" `
+              $stateRoot '/grant' '*S-1-1-0:(F)' | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Could not tamper with the state-root fixture.' }
+            try {
+              Get-AbodeToWebRuntimeAccountMarker -MarkerPath $markerPath | Out-Null
+              throw 'A marker below an untrusted state directory was accepted.'
+            }
+            catch {
+              if ($_.Exception.Message -eq 'A marker below an untrusted state directory was accepted.') { throw }
+            }
+          }
+          finally {
+            if (Test-Path -LiteralPath $fixture) {
+              & "$env:SystemRoot/System32/icacls.exe" $fixture '/reset' '/T' '/C' | Out-Null
+              Remove-Item -LiteralPath $fixture -Recurse -Force
+            }
+          }
+
+      - name: Exercise checksummed backup format
+        shell: pwsh
+        run: |
+          $tempRoot = [IO.Path]::GetFullPath($env:RUNNER_TEMP).TrimEnd('\')
+          $fixture = Join-Path $tempRoot "AbodeToWebBackup-$([guid]::NewGuid().ToString('N'))"
+          try {
+            New-Item -ItemType Directory -Path "$fixture/data/config", "$fixture/data/state", "$fixture/out" -Force | Out-Null
+            Set-Content -LiteralPath "$fixture/data/config/abode-to-web.yaml" -Value 'abodeToWeb: {}' -Encoding utf8NoBOM
+            Set-Content -LiteralPath "$fixture/data/state/abode-to-web.db" -Value 'fixture' -Encoding utf8NoBOM
+            Set-Content -LiteralPath "$fixture/data/state/runtime-account.json" -Value '{"fixture":true}' -Encoding utf8NoBOM
+            $archive = ./scripts/backup-abode-to-web.ps1 `
+              -DataRoot "$fixture/data" `
+              -Destination "$fixture/out/backup.zip" `
+              -ServiceName AbodeToWebBackupCiFixture `
+              -ExcludeSecrets `
+              -NoServiceStop |
+              Select-Object -Last 1
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            [IO.Compression.ZipFile]::ExtractToDirectory($archive, "$fixture/extracted")
+            $metadata = Get-Content -LiteralPath "$fixture/extracted/backup.json" -Raw | ConvertFrom-Json
+            if ($metadata.format -ne 'abode-to-web-backup' -or $metadata.schemaVersion -ne 1) {
+              throw 'Backup metadata is invalid.'
+            }
+            if (-not $metadata.machineBoundRuntimeCredentialExcluded -or
+                (Test-Path -LiteralPath "$fixture/extracted/payload/state/runtime-account.json")) {
+              throw 'Machine-bound runtime identity material was not excluded from backup.'
+            }
+            foreach ($entry in $metadata.files) {
+              $path = Join-Path "$fixture/extracted" ([string]$entry.path).Replace('/', '\')
+              $hash = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash
+              if (-not $hash.Equals([string]$entry.sha256, [StringComparison]::OrdinalIgnoreCase)) {
+                throw "Backup checksum mismatch: $path"
+              }
+            }
+          }
+          finally {
+            $resolved = [IO.Path]::GetFullPath($fixture)
+            if (-not $resolved.StartsWith("$tempRoot\", [StringComparison]::OrdinalIgnoreCase)) {
+              throw 'Refusing unsafe CI fixture cleanup.'
+            }
+            if (Test-Path -LiteralPath $resolved) { Remove-Item -LiteralPath $resolved -Recurse -Force }
+          }
+
+      - name: Check local Markdown links
+        shell: pwsh
+        run: |
+          $broken = [Collections.Generic.List[string]]::new()
+          Get-ChildItem -Path . -Filter '*.md' -File -Recurse | ForEach-Object {
+            $document = $_
+            $content = Get-Content -LiteralPath $document.FullName -Raw
+            foreach ($match in [regex]::Matches(
+              $content,
+              '\[[^\]]+\]\((?!https?://|mailto:|#)([^)#]+)(?:#[^)]+)?\)'
+            )) {
+              $target = [uri]::UnescapeDataString($match.Groups[1].Value)
+              if (-not (Test-Path -LiteralPath (Join-Path $document.DirectoryName $target))) {
+                $broken.Add("$($document.FullName): $target")
+              }
+            }
+          }
+          if ($broken.Count -gt 0) { throw "Broken local links:`n$($broken -join "`n")" }

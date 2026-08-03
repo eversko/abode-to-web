@@ -1,0 +1,38 @@
+name: Feature request
+description: Propose a focused improvement to Abode to Web.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Abode to Web deliberately stays small and Windows-first. Explain the personal-hosting problem before proposing an implementation.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is difficult today, and who encounters it?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the smallest useful result from a user's perspective.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include current workarounds or simpler approaches.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: This request fits a focused personal hosting control plane and does not require arbitrary browser commands.
+          required: true
+        - label: I searched existing issues and the roadmap.
+          required: true

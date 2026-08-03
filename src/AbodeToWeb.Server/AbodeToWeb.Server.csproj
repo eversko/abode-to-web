@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\AbodeToWeb.Core\AbodeToWeb.Core.csproj" />
+    <ProjectReference Include="..\AbodeToWeb.Infrastructure\AbodeToWeb.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.10" />
+    <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.10" />
+    <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Microsoft.AspNetCore.OpenApi.Generated</InterceptorsNamespaces>
+  </PropertyGroup>
+
+  <Target Name="BuildDashboard" BeforeTargets="Publish" Condition="Exists('..\AbodeToWeb.Web\package.json') and '$(SkipFrontendBuild)' != 'true'">
+    <Exec WorkingDirectory="..\AbodeToWeb.Web" Command="npm ci --no-audit --no-fund" />
+    <Exec WorkingDirectory="..\AbodeToWeb.Web" Command="npm run build" />
+    <ItemGroup>
+      <DashboardFiles Include="..\AbodeToWeb.Web\dist\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DashboardFiles)" DestinationFiles="@(DashboardFiles->'$(PublishDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+</Project>

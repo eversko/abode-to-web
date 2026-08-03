@@ -1,0 +1,17 @@
+name: Conduct contact
+description: Request a private channel for a project-level conduct concern.
+title: "[Conduct contact]: private channel requested"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This form only requests a private contact channel. Do not include names, allegations, screenshots, links, evidence, credentials, or other sensitive details here.
+  - type: checkboxes
+    id: request
+    attributes:
+      label: Private-contact request
+      options:
+        - label: Please arrange a private channel for a project-level conduct concern.
+          required: true
+        - label: I have not included names, evidence, or sensitive details in this issue.
+          required: true

@@ -1,0 +1,59 @@
+name: Bug report
+description: Report reproducible Abode to Web behavior that is incorrect or unsafe.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Abode to Web. Remove credentials, tokens, private URLs, and personal paths before submitting. Report vulnerabilities privately through the Security tab.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and what you expected instead.
+      placeholder: Abode to Web showed... I expected...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Open...
+        2. Select...
+        3. Observe...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Abode to Web version or commit
+      placeholder: v0.1.0 or a73c81f
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized diagnostics
+      description: Include the smallest useful log excerpt. Never attach environment files or tunnel credentials.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues for this problem.
+          required: true
+        - label: I removed secrets and private information from this report.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true

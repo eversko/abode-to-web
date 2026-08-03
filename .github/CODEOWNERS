@@ -1,0 +1,11 @@
+# AbodeToWeb is currently maintained by one GitHub owner.
+* @Jstn-1g
+
+# Changes to trust boundaries and release machinery deserve explicit owner review.
+/SECURITY.md @Jstn-1g
+/docs/SECURITY.md @Jstn-1g
+/docs/THREAT_MODEL.md @Jstn-1g
+/.github/workflows/ @Jstn-1g
+/scripts/ @Jstn-1g
+/src/AbodeToWeb.Infrastructure/ @Jstn-1g
+/src/AbodeToWeb.Server/ @Jstn-1g

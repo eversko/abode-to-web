@@ -1,0 +1,383 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+  DOTNET_VERSION: "10.0.302"
+  NODE_VERSION: "22.22.2"
+
+jobs:
+  package:
+    name: Build self-contained win-x64 release
+    runs-on: windows-latest
+    timeout-minutes: 35
+    permissions:
+      actions: read
+      attestations: write
+      contents: read
+      id-token: write
+    outputs:
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+      tag_object_sha: ${{ steps.promotion.outputs.tag_object_sha }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Tag names identify a release version; they do not authorize publication.
+      # Resolve the tag to a commit and bind it to protected-main CI before
+      # building an artifact that the downstream write-capable job can publish.
+      - name: Verify trusted tag promotion
+        id: promotion
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUIRED_CI_WORKFLOW: ci.yml
+          TRUSTED_RELEASE_BRANCH: main
+        run: |
+          $tagObject = (& git cat-file -t $env:GITHUB_REF).Trim()
+          if ($LASTEXITCODE -ne 0 -or $tagObject -ne 'tag') {
+            throw "Release ref '$env:GITHUB_REF' must be an annotated tag."
+          }
+
+          $tagObjectSha = (& git rev-parse --verify "${env:GITHUB_REF}^{tag}").Trim()
+          if ($LASTEXITCODE -ne 0 -or $tagObjectSha -notmatch '^[0-9a-f]{40}$') {
+            throw "Release tag '$env:GITHUB_REF_NAME' did not resolve to an annotated tag object."
+          }
+          "tag_object_sha=$tagObjectSha" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+          $tagCommit = (& git rev-parse --verify "${env:GITHUB_REF}^{commit}").Trim()
+          if ($LASTEXITCODE -ne 0 -or $tagCommit -notmatch '^[0-9a-f]{40}$') {
+            throw "Release tag '$env:GITHUB_REF_NAME' did not resolve to a commit."
+          }
+
+          $trustedRef = "refs/remotes/origin/$env:TRUSTED_RELEASE_BRANCH"
+          & git fetch --no-tags origin "+refs/heads/$env:TRUSTED_RELEASE_BRANCH`:$trustedRef"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Could not fetch the trusted release branch '$env:TRUSTED_RELEASE_BRANCH'."
+          }
+
+          & git merge-base --is-ancestor $tagCommit $trustedRef
+          if ($LASTEXITCODE -ne 0) {
+            throw "Release tag '$env:GITHUB_REF_NAME' must resolve to a commit reachable from origin/$env:TRUSTED_RELEASE_BRANCH."
+          }
+
+          $runsJson = (& gh api --method GET "/repos/$env:GITHUB_REPOSITORY/actions/workflows/$env:REQUIRED_CI_WORKFLOW/runs?branch=$env:TRUSTED_RELEASE_BRANCH&event=push&head_sha=$tagCommit&status=completed&per_page=100" | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0) {
+            throw "Could not read required CI workflow results for '$tagCommit'."
+          }
+          $runs = $runsJson | ConvertFrom-Json
+          $candidateRuns = @($runs.workflow_runs | Where-Object { $_.head_sha -eq $tagCommit })
+          if ($candidateRuns.Count -eq 0) {
+            throw "Release tag '$env:GITHUB_REF_NAME' has no candidate $env:REQUIRED_CI_WORKFLOW push run for commit '$tagCommit'."
+          }
+          if (@($candidateRuns | Where-Object { $_.head_branch -ne $env:TRUSTED_RELEASE_BRANCH }).Count -ne 0) {
+            throw "Required CI results for '$tagCommit' must have head_branch '$env:TRUSTED_RELEASE_BRANCH'."
+          }
+          $successfulRun = @($candidateRuns | Where-Object {
+              $_.head_branch -eq $env:TRUSTED_RELEASE_BRANCH -and $_.conclusion -eq 'success'
+          } | Select-Object -First 1)
+          if ($successfulRun.Count -ne 1) {
+            throw "Release tag '$env:GITHUB_REF_NAME' requires a successful $env:REQUIRED_CI_WORKFLOW push run from '$env:TRUSTED_RELEASE_BRANCH' for commit '$tagCommit'."
+          }
+
+      - name: Scan release source for secrets
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/AbodeToWeb.Web/package-lock.json
+
+      - name: Resolve package version
+        id: version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+              $version = $env:GITHUB_REF_NAME.Substring(1)
+              try {
+                $parsedVersion = [Management.Automation.SemanticVersion]::new($version)
+              }
+              catch {
+                throw "Release tag '$env:GITHUB_REF_NAME' must be a semantic version such as v1.2.3 or v1.2.3-rc.1."
+              }
+              if ($parsedVersion.ToString() -cne $version) {
+                throw "Release tag '$env:GITHUB_REF_NAME' must use the complete canonical semantic version."
+              }
+          }
+          else {
+              $version = "0.0.0-ci.$env:GITHUB_RUN_NUMBER"
+          }
+
+          $isPrerelease = $version.Contains('-', [StringComparison]::Ordinal)
+          "ABODE_TO_WEB_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "is_prerelease=$($isPrerelease.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Restore and test backend
+        shell: pwsh
+        run: |
+          dotnet restore AbodeToWeb.sln --runtime win-x64 -p:NuGetAudit=true -p:NuGetAuditMode=all
+          dotnet format AbodeToWeb.sln --verify-no-changes --no-restore --verbosity minimal
+          dotnet test AbodeToWeb.sln --configuration Release --no-restore
+
+      - name: Build dashboard
+        working-directory: src/AbodeToWeb.Web
+        run: |
+          npm ci
+          npm audit --audit-level=high
+          npm audit --omit=dev --audit-level=high
+          npm run lint
+          npm test -- --run
+          npm run build
+
+      - name: Validate bundled PowerShell scripts
+        shell: pwsh
+        run: |
+          $failures = [Collections.Generic.List[string]]::new()
+          Get-ChildItem scripts -File |
+            Where-Object Extension -in '.ps1', '.psm1' |
+            ForEach-Object {
+              $tokens = $null
+              $errors = $null
+              [Management.Automation.Language.Parser]::ParseFile(
+                $_.FullName,
+                [ref] $tokens,
+                [ref] $errors
+              ) | Out-Null
+              foreach ($error in $errors) {
+                $failures.Add("$($_.FullName):$($error.Extent.StartLineNumber): $($error.Message)")
+              }
+            }
+          if ($failures.Count -gt 0) {
+            throw "One or more release PowerShell files did not parse:`n$($failures -join "`n")"
+          }
+
+      - name: Stage dashboard assets
+        shell: pwsh
+        run: |
+          $webRoot = 'src/AbodeToWeb.Server/wwwroot'
+          New-Item -ItemType Directory -Force -Path $webRoot | Out-Null
+          Copy-Item -Path 'src/AbodeToWeb.Web/dist/*' -Destination $webRoot -Recurse -Force
+
+      - name: Publish self-contained server
+        shell: pwsh
+        run: |
+          dotnet publish src/AbodeToWeb.Server/AbodeToWeb.Server.csproj `
+              --configuration Release `
+              --runtime win-x64 `
+              --self-contained true `
+              --no-restore `
+              -p:Version=$env:ABODE_TO_WEB_VERSION `
+              -p:SkipFrontendBuild=true `
+              -p:PublishReadyToRun=true `
+              -p:PublishTrimmed=false `
+              -p:DebugType=embedded `
+              -p:UseAppHost=true `
+              --output artifacts/publish
+
+      - name: Create release archive and checksum
+        shell: pwsh
+        run: |
+          $bundleName = "AbodeToWeb-$env:ABODE_TO_WEB_VERSION-win-x64"
+          $bundle = Join-Path 'artifacts' $bundleName
+          New-Item -ItemType Directory -Force -Path $bundle | Out-Null
+          Copy-Item -Path 'artifacts/publish/*' -Destination $bundle -Recurse -Force
+
+          foreach ($directory in @('scripts', 'docs')) {
+              if (Test-Path $directory) {
+                  Copy-Item -Path $directory -Destination $bundle -Recurse -Force
+              }
+          }
+
+          if (Test-Path 'config') {
+              $configDestination = Join-Path $bundle 'config'
+              New-Item -ItemType Directory -Force -Path $configDestination | Out-Null
+              Get-ChildItem -Path 'config' -File |
+                  Where-Object { $_.Name -match '\.example\.' } |
+                  Copy-Item -Destination $configDestination -Force
+          }
+
+          foreach ($file in @('README.md', 'LICENSE', 'SECURITY.md', 'THIRD_PARTY_NOTICES.md')) {
+              if (Test-Path $file) {
+                  Copy-Item -Path $file -Destination $bundle -Force
+              }
+          }
+
+          $archive = Join-Path 'artifacts' "$bundleName.zip"
+          Compress-Archive -Path $bundle -DestinationPath $archive -CompressionLevel Optimal
+          $hash = (Get-FileHash -Path $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $([IO.Path]::GetFileName($archive))" |
+              Set-Content -Path 'artifacts/SHA256SUMS' -Encoding utf8
+
+      - name: Verify packaged release
+        shell: pwsh
+        run: |
+          $archive = Get-Item 'artifacts/AbodeToWeb-*.zip'
+          $checksum = (Get-Content -LiteralPath 'artifacts/SHA256SUMS' -Raw).Trim()
+          if ($checksum -notmatch '^([0-9a-f]{64})  ([^\\/]+\.zip)$') {
+            throw 'SHA256SUMS is not in the expected portable format.'
+          }
+          if ($Matches[2] -ne $archive.Name) {
+            throw 'SHA256SUMS names a different release archive.'
+          }
+          $actualHash = (Get-FileHash -LiteralPath $archive.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($Matches[1] -ne $actualHash) {
+            throw 'The packaged release checksum does not match the archive.'
+          }
+
+          $smokeRoot = Join-Path $env:RUNNER_TEMP "AbodeToWebRelease-$([guid]::NewGuid().ToString('N'))"
+          try {
+            Expand-Archive -LiteralPath $archive.FullName -DestinationPath $smokeRoot
+            $bundleRoot = Get-ChildItem -LiteralPath $smokeRoot -Directory
+            if ($bundleRoot.Count -ne 1) {
+              throw 'The release archive must contain exactly one top-level bundle directory.'
+            }
+
+            $server = Join-Path $bundleRoot[0].FullName 'AbodeToWeb.Server.exe'
+            $manifest = Join-Path $bundleRoot[0].FullName 'config/abode-to-web.example.yaml'
+            $installer = Join-Path $bundleRoot[0].FullName 'scripts/install-abode-to-web.ps1'
+            $validationText = (& $server validate-config --path $manifest --json 2>&1 | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0) {
+              throw "The packaged server rejected the example manifest: $validationText"
+            }
+            $validation = $validationText | ConvertFrom-Json
+            if (-not [bool]$validation.valid) {
+              throw 'The packaged server reported an invalid example manifest.'
+            }
+
+            & $installer -SourceRoot $bundleRoot[0].FullName -PublishOnly
+          }
+          finally {
+            if (Test-Path -LiteralPath $smokeRoot) {
+              Remove-Item -LiteralPath $smokeRoot -Recurse -Force
+            }
+          }
+
+      - name: Attest release artifact provenance
+        if: github.event.repository.visibility == 'public'
+        uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661 # v3
+        with:
+          subject-path: artifacts/AbodeToWeb-*.zip
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: AbodeToWeb-${{ steps.version.outputs.version }}-win-x64
+          path: |
+            artifacts/AbodeToWeb-*.zip
+            artifacts/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 30
+
+
+  release:
+    name: Publish GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: package
+    runs-on: windows-latest
+    timeout-minutes: 10
+    # Configure this repository environment with required reviewers before
+    # enabling public release publication. GitHub must also enforce a v* tag
+    # ruleset that blocks updates/deletions and restricts tag creation.
+    environment:
+      name: release
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified release artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: AbodeToWeb-${{ needs.package.outputs.version }}-win-x64
+          path: artifacts
+
+      # Environment approval may wait while an authorized maintainer moves a
+      # tag. Re-read the GitHub ref immediately before publishing so approval
+      # remains bound to the exact annotated tag object that package verified.
+      - name: Recheck approved tag object
+        shell: pwsh
+        env:
+          EXPECTED_TAG_OBJECT_SHA: ${{ needs.package.outputs.tag_object_sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ($env:EXPECTED_TAG_OBJECT_SHA -notmatch '^[0-9a-f]{40}$') {
+            throw 'The package job did not provide a valid verified tag object SHA.'
+          }
+          $escapedTagName = [Uri]::EscapeDataString($env:GITHUB_REF_NAME)
+          $referenceJson = (& gh api --method GET "/repos/$env:GITHUB_REPOSITORY/git/ref/tags/$escapedTagName" | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0) {
+            throw "Could not read the current GitHub ref for release tag '$env:GITHUB_REF_NAME'."
+          }
+          $reference = $referenceJson | ConvertFrom-Json
+          if ($reference.ref -cne "refs/tags/$env:GITHUB_REF_NAME") {
+            throw "GitHub returned an unexpected release ref for '$env:GITHUB_REF_NAME'."
+          }
+          if ($reference.object.type -ne 'tag' -or $reference.object.sha -cne $env:EXPECTED_TAG_OBJECT_SHA) {
+            throw "Release tag '$env:GITHUB_REF_NAME' moved after package verification or is no longer an annotated tag."
+          }
+
+      - name: Create draft GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IS_PRERELEASE: ${{ needs.package.outputs.is_prerelease }}
+        run: |
+          $archive = Get-Item 'artifacts/AbodeToWeb-*.zip'
+          $arguments = @(
+              'release', 'create', $env:GITHUB_REF_NAME,
+              $archive.FullName, 'artifacts/SHA256SUMS',
+              '--draft', '--verify-tag', '--generate-notes',
+              '--title', "Abode to Web $env:GITHUB_REF_NAME"
+          )
+          if ($env:IS_PRERELEASE -eq 'true') {
+            $arguments += '--prerelease'
+          }
+          & gh @arguments
+          if ($LASTEXITCODE -ne 0) {
+            throw "Could not create the draft GitHub release for '$env:GITHUB_REF_NAME'."
+          }
+
+      - name: Publish complete GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IS_PRERELEASE: ${{ needs.package.outputs.is_prerelease }}
+        run: |
+          $arguments = @('release', 'edit', $env:GITHUB_REF_NAME, '--draft=false')
+          if ($env:IS_PRERELEASE -eq 'true') {
+            $arguments += '--prerelease'
+          }
+          else {
+            $arguments += '--latest'
+          }
+          & gh @arguments
+          if ($LASTEXITCODE -ne 0) {
+            throw "Could not publish the completed GitHub release for '$env:GITHUB_REF_NAME'."
+          }

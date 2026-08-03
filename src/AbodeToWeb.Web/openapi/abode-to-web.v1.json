@@ -1,0 +1,2669 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Abode to Web Server | v1",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:49321/"
+    }
+  ],
+  "paths": {
+    "/api/v1/system/status": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/tunnel": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TunnelStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-sites": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExternalSiteSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-sites/{siteId}": {
+      "put": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveExternalSiteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/local-projects": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LocalProjectSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/local-projects/{projectId}": {
+      "put": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveLocalProjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/export": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PortfolioProjectExport"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{appId}": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "removeRepository",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{appId}/deployments": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeploymentSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/deployments": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeploymentSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{appId}/start": {
+      "post": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{appId}/stop": {
+      "post": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{appId}/force-stop": {
+      "post": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{appId}/restart": {
+      "post": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{appId}/deploy": {
+      "post": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{appId}/rollback": {
+      "post": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RollbackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{appId}/git/check": {
+      "post": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{appId}/hostname": {
+      "put": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeHostnameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{appId}/visibility": {
+      "put": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeVisibilityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/operations/{operationId}": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "operationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/operations/events": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/logs": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/logs/events": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/logs/download": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/activity": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/configuration/validate": {
+      "post": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateConfigurationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{appId}/secrets": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{appId}/secrets/example": {
+      "get": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "operationId": "DownloadProjectEnvironmentExample",
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{appId}/secrets/{key}": {
+      "put": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceSecretRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/onboarding/detect": {
+      "post": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DetectProjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingDetection"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/onboarding/clone": {
+      "post": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloneProjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloneProjectAccepted"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/onboarding/validate": {
+      "post": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingValidation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/onboarding/projects": {
+      "post": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/modes/quiet": {
+      "post": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuietModeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/modes/showcase": {
+      "post": {
+        "tags": [
+          "Abode to Web"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShowcaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AppManifest": {
+        "required": [
+          "id",
+          "name",
+          "deployment"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "autostart": {
+            "type": "boolean"
+          },
+          "protected": {
+            "type": "boolean"
+          },
+          "demoGroups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "repository": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RepositoryOptions"
+              }
+            ]
+          },
+          "deployment": {
+            "$ref": "#/components/schemas/DeploymentOptions"
+          },
+          "runtime": {
+            "$ref": "#/components/schemas/RuntimeOptions"
+          },
+          "health": {
+            "$ref": "#/components/schemas/HealthCheckOptions"
+          },
+          "routing": {
+            "$ref": "#/components/schemas/RoutingOptions"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/AppVisibility"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AppVisibility": {
+        "enum": [
+          "public",
+          "protected",
+          "disabled"
+        ]
+      },
+      "ChangeHostnameRequest": {
+        "required": [
+          "hostname"
+        ],
+        "type": "object",
+        "properties": {
+          "hostname": {
+            "type": "string"
+          }
+        }
+      },
+      "ChangeVisibilityRequest": {
+        "required": [
+          "visibility"
+        ],
+        "type": "object",
+        "properties": {
+          "visibility": {
+            "$ref": "#/components/schemas/AppVisibility"
+          }
+        }
+      },
+      "CloneProjectAccepted": {
+        "required": [
+          "operationId",
+          "kind",
+          "progressUrl",
+          "repositoryPath"
+        ],
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/OperationKind"
+          },
+          "progressUrl": {
+            "type": "string"
+          },
+          "repositoryPath": {
+            "type": "string"
+          }
+        }
+      },
+      "CloneProjectRequest": {
+        "required": [
+          "repository"
+        ],
+        "type": "object",
+        "properties": {
+          "repository": {
+            "type": "string"
+          }
+        }
+      },
+      "CommandSpec": {
+        "required": [
+          "executable"
+        ],
+        "type": "object",
+        "properties": {
+          "executable": {
+            "type": "string"
+          },
+          "arguments": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "timeoutSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CommandSuggestion": {
+        "required": [
+          "id",
+          "purpose",
+          "executable",
+          "arguments",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "executable": {
+            "type": "string"
+          },
+          "arguments": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "ComponentCondition": {
+        "enum": [
+          "unknown",
+          "healthy",
+          "degraded",
+          "unhealthy",
+          "offline"
+        ]
+      },
+      "ComponentStatus": {
+        "required": [
+          "condition",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "condition": {
+            "$ref": "#/components/schemas/ComponentCondition"
+          },
+          "label": {
+            "type": "string"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ContractValidationIssue": {
+        "required": [
+          "code",
+          "path",
+          "message",
+          "isWarning"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "isWarning": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateProjectRequest": {
+        "required": [
+          "detectionId",
+          "id",
+          "name",
+          "description",
+          "repositoryProvider",
+          "repositoryRemote",
+          "repositoryBranch",
+          "installSuggestionId",
+          "buildSuggestionId",
+          "startSuggestionId",
+          "staticOutputDirectory",
+          "portEnvironmentVariable",
+          "healthPath",
+          "internalPort",
+          "hostname",
+          "accessApplicationAudience",
+          "visibility",
+          "autostart",
+          "protected",
+          "runTestBuild"
+        ],
+        "type": "object",
+        "properties": {
+          "detectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "repositoryProvider": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OnboardingRepositoryProvider"
+              }
+            ]
+          },
+          "repositoryRemote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "repositoryBranch": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "installSuggestionId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "buildSuggestionId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "startSuggestionId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "staticOutputDirectory": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "portEnvironmentVariable": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "healthPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "internalPort": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "accessApplicationAudience": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/AppVisibility"
+          },
+          "autostart": {
+            "type": "boolean"
+          },
+          "protected": {
+            "type": "boolean"
+          },
+          "runTestBuild": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DeploymentAdapter": {
+        "enum": [
+          "command",
+          "node",
+          "static",
+          "docker-compose"
+        ]
+      },
+      "DeploymentMode": {
+        "enum": [
+          "worktree",
+          "local"
+        ]
+      },
+      "DeploymentOptions": {
+        "type": "object",
+        "properties": {
+          "adapter": {
+            "$ref": "#/components/schemas/DeploymentAdapter"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/DeploymentMode"
+          },
+          "install": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CommandSpec"
+              }
+            ]
+          },
+          "build": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CommandSpec"
+              }
+            ]
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CommandSpec"
+              }
+            ]
+          },
+          "workingDirectory": {
+            "type": "string"
+          },
+          "environmentFile": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "staticOutputDirectory": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "portEnvironmentVariable": {
+            "type": "string"
+          },
+          "candidateStartupTimeoutSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "drainSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeploymentStatus": {
+        "enum": [
+          "queued",
+          "fetching",
+          "resolving-commit",
+          "preparing-worktree",
+          "installing",
+          "building",
+          "starting-candidate",
+          "verifying-candidate",
+          "switching-route",
+          "draining-previous",
+          "succeeded",
+          "failed",
+          "cancelled",
+          "rolled-back"
+        ]
+      },
+      "DeploymentSummary": {
+        "required": [
+          "id",
+          "projectId",
+          "commitSha",
+          "shortSha",
+          "branch",
+          "status",
+          "commitMessage",
+          "commitAuthor",
+          "createdAt",
+          "completedAt",
+          "duration",
+          "buildSucceeded",
+          "healthSucceeded",
+          "isActive",
+          "isKnownGood",
+          "safeFailureMessage"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "commitSha": {
+            "type": "string"
+          },
+          "shortSha": {
+            "type": "string"
+          },
+          "branch": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DeploymentStatus"
+          },
+          "commitMessage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "commitAuthor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "duration": {
+            "pattern": "^-?(\\d+\\.)?\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,7})?$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "buildSucceeded": {
+            "type": "boolean"
+          },
+          "healthSucceeded": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isKnownGood": {
+            "type": "boolean"
+          },
+          "safeFailureMessage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "DetectedFramework": {
+        "enum": [
+          "unknown",
+          "node",
+          "vite",
+          "next-js",
+          "react",
+          "asp-net-core",
+          "static",
+          "docker-compose"
+        ]
+      },
+      "DetectProjectRequest": {
+        "required": [
+          "localPath"
+        ],
+        "type": "object",
+        "properties": {
+          "localPath": {
+            "type": "string"
+          }
+        }
+      },
+      "ExternalSiteSummary": {
+        "required": [
+          "id",
+          "name",
+          "description",
+          "url",
+          "provider",
+          "managementUrl",
+          "repositoryPath",
+          "health",
+          "httpStatusCode",
+          "observedAt",
+          "safeStatusMessage"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "managementUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "repositoryPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "health": {
+            "$ref": "#/components/schemas/HealthState"
+          },
+          "httpStatusCode": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "safeStatusMessage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "GitStatus": {
+        "required": [
+          "branch",
+          "deployedCommit",
+          "remoteCommit",
+          "updateAvailable",
+          "commitMessage",
+          "commitAuthor",
+          "commitDate",
+          "checkedAt",
+          "error"
+        ],
+        "type": "object",
+        "properties": {
+          "branch": {
+            "type": "string"
+          },
+          "deployedCommit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "remoteCommit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "updateAvailable": {
+            "type": "boolean"
+          },
+          "commitMessage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "commitAuthor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "commitDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "checkedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "error": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "HealthCheckOptions": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/HealthCheckType"
+          },
+          "path": {
+            "type": "string"
+          },
+          "intervalSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "timeoutSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "healthyThreshold": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "unhealthyThreshold": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "HealthCheckType": {
+        "enum": [
+          "none",
+          "process",
+          "http",
+          "tcp"
+        ]
+      },
+      "HealthState": {
+        "enum": [
+          "unknown",
+          "starting",
+          "healthy",
+          "degraded",
+          "unhealthy",
+          "recovering",
+          "stopped",
+          "disabled"
+        ]
+      },
+      "LocalProjectSummary": {
+        "required": [
+          "id",
+          "name",
+          "description",
+          "repositoryPath",
+          "plannedHostname",
+          "notes",
+          "exists",
+          "branch",
+          "lastCommitSha",
+          "lastCommitShortSha",
+          "lastCommitMessage",
+          "lastCommitAuthor",
+          "lastCommitDate",
+          "observedAt",
+          "safeStatusMessage"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "repositoryPath": {
+            "type": "string"
+          },
+          "plannedHostname": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "exists": {
+            "type": "boolean"
+          },
+          "branch": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastCommitSha": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastCommitShortSha": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastCommitMessage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastCommitAuthor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastCommitDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "safeStatusMessage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "OnboardingDetection": {
+        "required": [
+          "detectionId",
+          "expiresAt",
+          "repositoryPath",
+          "isGitRepository",
+          "framework",
+          "packageManager",
+          "lockFile",
+          "suggestedRepositoryProvider",
+          "gitRemotes",
+          "suggestedRemote",
+          "suggestedBranch",
+          "suggestedCommands",
+          "suggestedHealthPaths",
+          "suggestedStaticOutputDirectory",
+          "suggestedPortEnvironmentVariable",
+          "suggestedPort",
+          "warnings"
+        ],
+        "type": "object",
+        "properties": {
+          "detectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "repositoryPath": {
+            "type": "string"
+          },
+          "isGitRepository": {
+            "type": "boolean"
+          },
+          "framework": {
+            "$ref": "#/components/schemas/DetectedFramework"
+          },
+          "packageManager": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lockFile": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "suggestedRepositoryProvider": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OnboardingRepositoryProvider"
+              }
+            ]
+          },
+          "gitRemotes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "suggestedRemote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "suggestedBranch": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "suggestedCommands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandSuggestion"
+            }
+          },
+          "suggestedHealthPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "suggestedStaticOutputDirectory": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "suggestedPortEnvironmentVariable": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "suggestedPort": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "OnboardingRepositoryProvider": {
+        "enum": [
+          "github",
+          "other",
+          null
+        ]
+      },
+      "OnboardingValidation": {
+        "required": [
+          "isValid",
+          "issues",
+          "normalizedManifest"
+        ],
+        "type": "object",
+        "properties": {
+          "isValid": {
+            "type": "boolean"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContractValidationIssue"
+            }
+          },
+          "normalizedManifest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AppManifest"
+              }
+            ]
+          }
+        }
+      },
+      "OperationKind": {
+        "enum": [
+          "start",
+          "stop",
+          "restart",
+          "deploy",
+          "rollback",
+          "check-for-updates",
+          "validate-configuration",
+          "test-build",
+          "quiet-mode",
+          "start-showcase",
+          "change-hostname",
+          "remove-project",
+          "change-visibility"
+        ]
+      },
+      "PortfolioProjectExport": {
+        "required": [
+          "id",
+          "name",
+          "description",
+          "url",
+          "online",
+          "health",
+          "generatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "url": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "online": {
+            "type": "boolean"
+          },
+          "health": {
+            "$ref": "#/components/schemas/HealthState"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ProjectRuntimeState": {
+        "enum": [
+          "disabled",
+          "stopped",
+          "starting",
+          "running",
+          "stopping",
+          "failed",
+          "circuit-open"
+        ]
+      },
+      "ProjectSummary": {
+        "required": [
+          "id",
+          "name",
+          "description",
+          "runtimeState",
+          "health",
+          "git",
+          "hostname",
+          "visibility",
+          "protected",
+          "lastDeploymentAt",
+          "startedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "runtimeState": {
+            "$ref": "#/components/schemas/ProjectRuntimeState"
+          },
+          "health": {
+            "$ref": "#/components/schemas/HealthState"
+          },
+          "git": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GitStatus"
+              }
+            ]
+          },
+          "hostname": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/AppVisibility"
+          },
+          "protected": {
+            "type": "boolean"
+          },
+          "lastDeploymentAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "startedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "QuietModeRequest": {
+        "required": [
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ReplaceSecretRequest": {
+        "required": [
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "RepositoryOptions": {
+        "required": [
+          "localPath"
+        ],
+        "type": "object",
+        "properties": {
+          "provider": {
+            "$ref": "#/components/schemas/RepositoryProvider"
+          },
+          "localPath": {
+            "type": "string"
+          },
+          "remote": {
+            "type": "string"
+          },
+          "branch": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RepositoryProvider": {
+        "enum": [
+          "git-hub",
+          "other"
+        ]
+      },
+      "RestartPolicy": {
+        "enum": [
+          "never",
+          "on-failure",
+          "always"
+        ]
+      },
+      "RollbackRequest": {
+        "required": [
+          "deploymentId"
+        ],
+        "type": "object",
+        "properties": {
+          "deploymentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "RoutingOptions": {
+        "type": "object",
+        "properties": {
+          "hostname": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "accessApplicationAudience": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "offlinePage": {
+            "type": "boolean"
+          },
+          "requestTimeoutSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "maxRequestBodyBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RuntimeOptions": {
+        "type": "object",
+        "properties": {
+          "internalPort": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "restartPolicy": {
+            "$ref": "#/components/schemas/RestartPolicy"
+          },
+          "maxRestarts": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "restartWindowSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "initialBackoffSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "maxBackoffSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "stableRuntimeSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "gracefulShutdownSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SaveExternalSiteRequest": {
+        "required": [
+          "name",
+          "description",
+          "url",
+          "provider",
+          "managementUrl",
+          "repositoryPath"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "managementUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "repositoryPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SaveLocalProjectRequest": {
+        "required": [
+          "name",
+          "description",
+          "repositoryPath",
+          "plannedHostname",
+          "notes"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "repositoryPath": {
+            "type": "string"
+          },
+          "plannedHostname": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ShowcaseRequest": {
+        "required": [
+          "projectIds"
+        ],
+        "type": "object",
+        "properties": {
+          "projectIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SystemStatus": {
+        "required": [
+          "observedAt",
+          "pc",
+          "abodeToWeb",
+          "gateway",
+          "cloudflareTunnel",
+          "runningProjects",
+          "unhealthyProjects",
+          "updatesAvailable",
+          "cpuPercent",
+          "memoryUsedBytes",
+          "memoryTotalBytes",
+          "diskFreeBytes",
+          "diskTotalBytes",
+          "quietMode"
+        ],
+        "type": "object",
+        "properties": {
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pc": {
+            "$ref": "#/components/schemas/ComponentStatus"
+          },
+          "abodeToWeb": {
+            "$ref": "#/components/schemas/ComponentStatus"
+          },
+          "gateway": {
+            "$ref": "#/components/schemas/ComponentStatus"
+          },
+          "cloudflareTunnel": {
+            "$ref": "#/components/schemas/ComponentStatus"
+          },
+          "runningProjects": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "unhealthyProjects": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "updatesAvailable": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "cpuPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "memoryUsedBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "memoryTotalBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "diskFreeBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "diskTotalBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "quietMode": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TunnelConnectionState": {
+        "enum": [
+          "not-installed",
+          "not-configured",
+          "stopped",
+          "connecting",
+          "connected",
+          "degraded",
+          "unknown"
+        ]
+      },
+      "TunnelStatus": {
+        "required": [
+          "state",
+          "cloudflaredInstalled",
+          "version",
+          "serviceInstalled",
+          "serviceRunning",
+          "gatewayReachable",
+          "tunnelName",
+          "checkedAt",
+          "safeDiagnostic"
+        ],
+        "type": "object",
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/TunnelConnectionState"
+          },
+          "cloudflaredInstalled": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "serviceInstalled": {
+            "type": "boolean"
+          },
+          "serviceRunning": {
+            "type": "boolean"
+          },
+          "gatewayReachable": {
+            "type": "boolean"
+          },
+          "tunnelName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "safeDiagnostic": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ValidateConfigurationRequest": {
+        "required": [
+          "content"
+        ],
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Abode to Web"
+    }
+  ]
+}

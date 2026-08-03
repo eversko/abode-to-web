@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/eversko/abode-to-web/schemas/doctor-project.schema.json",
+  "title": "Abode to Web read-only project doctor report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "changesMade",
+    "status",
+    "git",
+    "detected",
+    "commandSuggestions",
+    "proposedApplication",
+    "requiredInputs",
+    "warnings",
+    "approvalActions"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "changesMade": { "const": false },
+    "status": { "enum": ["supported", "needs-input", "unsupported"] },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["isRepository", "headState", "currentBranch", "remoteConfigured", "remoteCount", "workingTreeInspected"],
+      "properties": {
+        "isRepository": { "type": "boolean" },
+        "headState": { "type": "string" },
+        "currentBranch": { "type": ["string", "null"] },
+        "remoteConfigured": { "type": "boolean" },
+        "remoteCount": { "type": "integer", "minimum": 0 },
+        "workingTreeInspected": { "const": false }
+      }
+    },
+    "detected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["framework", "adapter", "packageManager", "lockFile", "staticOutputDirectory", "staticOutputPresent"],
+      "properties": {
+        "framework": { "type": "string" },
+        "adapter": { "enum": ["static", "node", "command", "docker-compose"] },
+        "packageManager": { "type": ["string", "null"] },
+        "lockFile": { "type": ["string", "null"] },
+        "staticOutputDirectory": { "type": ["string", "null"] },
+        "staticOutputPresent": { "type": "boolean" }
+      }
+    },
+    "commandSuggestions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "purpose", "executable", "arguments", "reason", "experimental", "selected"],
+        "properties": {
+          "id": { "type": "string" },
+          "purpose": { "enum": ["install", "build", "start"] },
+          "executable": { "type": "string" },
+          "arguments": { "type": "array", "items": { "type": "string" } },
+          "reason": { "type": "string" },
+          "experimental": { "const": true },
+          "selected": { "const": false }
+        }
+      }
+    },
+    "proposedApplication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "autostart", "visibility", "adapter", "staticOutputDirectory", "projectExecutionEnabled", "installCommandEnabled", "buildCommandEnabled", "startCommandEnabled", "commandsSelected"],
+      "properties": {
+        "enabled": { "const": false },
+        "autostart": { "const": false },
+        "visibility": { "const": "disabled" },
+        "adapter": { "enum": ["static", "node", "command", "docker-compose"] },
+        "staticOutputDirectory": { "type": ["string", "null"] },
+        "projectExecutionEnabled": { "const": false },
+        "installCommandEnabled": { "const": false },
+        "buildCommandEnabled": { "const": false },
+        "startCommandEnabled": { "const": false },
+        "commandsSelected": { "const": false }
+      }
+    },
+    "requiredInputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "prompt", "required"],
+        "properties": {
+          "id": { "type": "string" },
+          "prompt": { "type": "string" },
+          "required": { "type": "boolean" }
+        }
+      }
+    },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "approvalActions": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["phrase", "authorizes"],
+        "properties": {
+          "phrase": { "enum": ["APPROVE LOCAL SETUP", "APPROVE PUBLISH"] },
+          "authorizes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

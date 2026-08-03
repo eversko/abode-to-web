@@ -1,0 +1,51 @@
+manifestVersion: 1
+
+abodeToWeb:
+  dashboard:
+    bind: "127.0.0.1"
+    port: 4545
+  gateway:
+    bind: "127.0.0.1"
+    port: 4580
+  projectsRoots:
+    # Keep this list narrow. Replace this generic example with the directory
+    # that contains only repositories you intend Abode to Web to inspect.
+    - "C:/Projects"
+  # Stable mode serves committed, prebuilt static output without running any
+  # project command. Opting in creates one shared Windows trust domain for all
+  # install, build, start, Node, command, and Docker Compose execution.
+  experimentalProjectExecution: false
+  startupStaggerSeconds: 2
+  cloudflare:
+    enabled: false
+    tunnelName: null
+    # Required when any app uses `visibility: protected`.
+    # access:
+    #   # Exact HTTPS *.cloudflareaccess.com team URL; no path, query, or custom port.
+    #   teamDomain: "https://your-team.cloudflareaccess.com"
+  storage:
+    retainedDeploymentsPerApp: 5
+    logRetentionDays: 14
+    maxLogBytesPerApp: 268435456
+
+apps: []
+
+# Read-only inventory for sites hosted outside this machine. Abode to Web checks
+# HTTPS reachability but does not proxy, deploy, or store provider credentials.
+externalSites: []
+
+# Read-only inventory for repos on this machine that are not hosted anywhere.
+# Abode to Web shows branch + last-commit facts on the dashboard; it never builds,
+# deploys, or serves these. Set plannedHostname to render a "Planned" card for
+# a project awaiting its first deploy.
+localProjects: []
+# localProjects:
+# - id: my-tool
+#   name: My Tool
+#   description: Desktop utility, not hosted
+#   repositoryPath: "C:/Projects/my-tool"
+# - id: my-next-site
+#   name: My Next Site
+#   repositoryPath: "C:/Projects/my-next-site"
+#   plannedHostname: my-next-site.example.com
+#   notes: Needs first deploy

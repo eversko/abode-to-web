@@ -1,0 +1,54 @@
+# Merge entries like this into the `apps` list in abode-to-web.yaml.
+# Detection in Add Project is advisory; this manifest remains authoritative.
+# Prebuilt static with no project commands is the proven default. Any install,
+# build, or start execution requires abodeToWeb.experimentalProjectExecution: true.
+- id: sample-static
+  name: Sample Static Site
+  description: "Example static web application"
+  enabled: false
+  autostart: false
+  protected: false
+  demoGroups: ["showcase"]
+  repository:
+    provider: github
+    localPath: "${PROJECTS_ROOT}/sample-static"
+    remote: origin
+    # Pin the reviewed remote target. Deploy rejects a later .git/config redirect.
+    expectedRemoteUrl: "https://github.com/example/sample-static.git"
+    branch: main
+  deployment:
+    adapter: static
+    mode: worktree
+    # Build `dist` before publishing and commit the reviewed output. This
+    # supported example runs no repository-controlled install/build/start command.
+    workingDirectory: "."
+    environmentFile: null # Runtime values live in Abode to Web's protected per-project secret file.
+    staticOutputDirectory: dist
+    portEnvironmentVariable: PORT
+    candidateStartupTimeoutSeconds: 120
+    drainSeconds: 5
+  runtime:
+    internalPort: null
+    restartPolicy: on-failure
+    maxRestarts: 5
+    restartWindowSeconds: 300
+    initialBackoffSeconds: 1
+    maxBackoffSeconds: 60
+    stableRuntimeSeconds: 300
+    gracefulShutdownSeconds: 15
+  health:
+    type: none
+    path: /
+    intervalSeconds: 20
+    timeoutSeconds: 5
+    healthyThreshold: 2
+    unhealthyThreshold: 3
+  routing:
+    hostname: null
+    # Required only when `visibility` is `protected`: the Access application's
+    # exact 64-character hexadecimal AUD tag.
+    accessApplicationAudience: null
+    offlinePage: true
+    requestTimeoutSeconds: 100
+    maxRequestBodyBytes: 104857600
+  visibility: disabled

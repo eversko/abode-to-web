@@ -1,0 +1,36 @@
+const segment = (value: string) => encodeURIComponent(value)
+
+export const apiRoutes = {
+  csrf: '/api/v1/security/csrf',
+  systemStatus: '/api/v1/system/status',
+  tunnelStatus: '/api/v1/system/tunnel',
+  projects: '/api/v1/projects',
+  externalSites: '/api/v1/external-sites',
+  externalSite: (siteId: string) => `/api/v1/external-sites/${segment(siteId)}`,
+  localProjects: '/api/v1/local-projects',
+  localProject: (projectId: string) => `/api/v1/local-projects/${segment(projectId)}`,
+  project: (projectId: string) => `/api/v1/projects/${segment(projectId)}`,
+  projectAction: (projectId: string, action: string) => action === 'check-for-updates'
+    ? `/api/v1/projects/${segment(projectId)}/git/check`
+    : `/api/v1/projects/${segment(projectId)}/${segment(action)}`,
+  projectHostname: (projectId: string) => `/api/v1/projects/${segment(projectId)}/hostname`,
+  projectVisibility: (projectId: string) => `/api/v1/projects/${segment(projectId)}/visibility`,
+  projectRemoval: (projectId: string, removeRepository: boolean) => `/api/v1/projects/${segment(projectId)}?removeRepository=${String(removeRepository)}`,
+  projectSecret: (projectId: string, key: string) => `/api/v1/projects/${segment(projectId)}/secrets/${segment(key)}`,
+  projectSecretExample: (projectId: string) => `/api/v1/projects/${segment(projectId)}/secrets/example`,
+  logs: '/api/v1/logs',
+  logEvents: '/api/v1/logs/events',
+  logDownload: '/api/v1/logs/download',
+  deployments: '/api/v1/deployments',
+  projectDeployments: (projectId: string) => `/api/v1/projects/${segment(projectId)}/deployments`,
+  rollback: (projectId: string) => `/api/v1/projects/${segment(projectId)}/rollback`,
+  operation: (operationId: string) => `/api/v1/operations/${segment(operationId)}`,
+  operationEvents: '/api/v1/operations/events',
+  activity: '/api/v1/activity',
+  onboardingDetect: '/api/v1/onboarding/detect',
+  onboardingClone: '/api/v1/onboarding/clone',
+  onboardingValidate: '/api/v1/onboarding/validate',
+  onboardingProjects: '/api/v1/onboarding/projects',
+  quietMode: '/api/v1/modes/quiet',
+  showcase: '/api/v1/modes/showcase',
+} as const

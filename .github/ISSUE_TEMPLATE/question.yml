@@ -1,0 +1,28 @@
+name: Question
+description: Ask a focused usage or configuration question about Abode to Web.
+title: "[Question]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ask about Abode to Web itself. Remove credentials, private URLs, personal paths, tunnel details, full manifests, and unredacted logs before submitting.
+  - type: textarea
+    id: question
+    attributes:
+      label: What do you need help with?
+      description: Describe the smallest safe question and the expected outcome.
+      placeholder: I am configuring a static project and need help understanding...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Abode to Web version or commit
+      placeholder: v0.1.0 or a73c81f
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed secrets and private information from this question.
+          required: true
