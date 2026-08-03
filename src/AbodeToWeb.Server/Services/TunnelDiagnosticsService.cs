@@ -12,7 +12,7 @@ public sealed class TunnelDiagnosticsService(ManifestProvider manifest, IHttpCli
 
     public async Task<TunnelStatus> GetAsync(CancellationToken cancellationToken = default)
     {
-        var executable = FindExecutable("cloudflared.exe");
+        var executable = FindExecutable();
         var installed = executable is not null;
         var version = installed ? await ReadVersionAsync(executable!, cancellationToken) : null;
         var (serviceInstalled, serviceRunning) = GetServiceState();
@@ -103,21 +103,22 @@ public sealed class TunnelDiagnosticsService(ManifestProvider manifest, IHttpCli
         catch (InvalidOperationException) { return (false, false); }
     }
 
-    private static string? FindExecutable(string fileName)
+    private static string? FindExecutable() =>
+        FindExecutable(
+        [
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)
+        ]);
+
+    internal static string? FindExecutable(IEnumerable<string> programFilesRoots)
     {
-        foreach (var directory in (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        foreach (var programFiles in programFilesRoots
+                     .Where(path => !string.IsNullOrWhiteSpace(path))
+                     .Select(Path.GetFullPath)
+                     .Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            var candidate = Path.Combine(directory.Trim('"'), fileName);
-            if (File.Exists(candidate)) return candidate;
-        }
-        foreach (var programFiles in new[]
-                 {
-                     Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-                     Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)
-                 }.Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase))
-        {
-            var conventional = Path.Combine(programFiles, "cloudflared", fileName);
-            if (File.Exists(conventional)) return conventional;
+            var conventional = Path.Combine(programFiles, "cloudflared", "cloudflared.exe");
+            if (File.Exists(conventional)) return Path.GetFullPath(conventional);
         }
         return null;
     }

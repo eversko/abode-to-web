@@ -82,7 +82,7 @@ The credential file is referenced by path and copied with restrictive ACLs. Its 
 
 If a service named `cloudflared` already has a different command line, the script stops before repurposing it. Choose a distinct `-ServiceName`, or review the existing connector and pass `-ReplaceExistingService` deliberately. The uninstaller applies the same ownership check and requires `-Force` before removing a connector that does not reference Abode to Web's configuration.
 
-The 0.1 dashboard diagnostic watches the conventional `cloudflared` service name and the generated readiness listener at `127.0.0.1:49312`. If you deliberately choose a different service name to coexist with another connector, use `status-tunnel.ps1 -ServiceName '<name>'` and the matching service-control script parameter as the authoritative local check; the dashboard's service-state card will not represent that custom name.
+The 0.1 dashboard diagnostic watches the conventional `cloudflared` service name and the generated readiness listener at `127.0.0.1:49312`. It resolves the binary only from the supported machine-wide `Program Files\cloudflared\cloudflared.exe` location; it does not execute a same-named file found through the service's inherited `PATH`. If you deliberately choose a different service name or a custom/user-scoped binary location, use `status-tunnel.ps1 -ServiceName '<name>'` and the matching service-control script parameter as the authoritative local check; the dashboard's service-state card will not represent that custom setup.
 
 ## Validate and check status
 
