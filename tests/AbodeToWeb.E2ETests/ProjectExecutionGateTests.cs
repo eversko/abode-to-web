@@ -88,6 +88,9 @@ public sealed class ProjectExecutionGateTests
             Assert.Equal("artifact.redeploy_required", failure.Code);
         }
 
+        // Crash the process tree explicitly so this test exercises the
+        // unexpected-exit path without depending on runner wall-clock timing.
+        fixture.ProcessLauncher.TerminateActiveProjectProcessForTest();
         var exited = await fixture.WaitForRuntimeStateAsync(ManagedRuntimeState.Exited);
         await Task.Delay(TimeSpan.FromMilliseconds(1_500));
         Assert.Equal(0, exited.RestartCount);
@@ -361,7 +364,7 @@ public sealed class ProjectExecutionGateTests
                         "-NonInteractive",
                         "-Command",
                         "$listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, [int]$env:PORT); " +
-                        "$listener.Start(); Start-Sleep -Seconds 3"
+                        "$listener.Start(); Start-Sleep -Seconds 300"
                     ],
                     TimeoutSeconds = 30
                 },
@@ -409,13 +412,26 @@ public sealed class ProjectExecutionGateTests
     internal sealed class RecordingProcessLauncher : IProcessLauncher
     {
         private int _projectLaunchCount;
+        private LaunchedProcess? _activeProjectProcess;
 
         internal int ProjectLaunchCount => Volatile.Read(ref _projectLaunchCount);
 
+        internal void TerminateActiveProjectProcessForTest()
+        {
+            var launched = Volatile.Read(ref _activeProjectProcess)
+                ?? throw new InvalidOperationException("The project process was not launched.");
+            launched.Job.Terminate(137u);
+        }
+
         public LaunchedProcess Start(ProcessStartInfo startInfo, string jobName, string? isolationKey)
         {
-            if (isolationKey is not null) Interlocked.Increment(ref _projectLaunchCount);
-            return SuspendedProcessLauncher.Start(startInfo, jobName, isolationKey: null);
+            var launched = SuspendedProcessLauncher.Start(startInfo, jobName, isolationKey: null);
+            if (isolationKey is not null)
+            {
+                Interlocked.Increment(ref _projectLaunchCount);
+                Volatile.Write(ref _activeProjectProcess, launched);
+            }
+            return launched;
         }
     }
 }
