@@ -6,9 +6,9 @@
 
 **Windows-first, health-gated Git releases for one machine.**
 
-Abode to Web turns a Windows PC or server into a small, understandable application platform. It prepares an exact Git commit in an isolated release directory, checks the candidate, and switches routing only after the activation gate passes. Stable static releases remain available for rollback.
+Abode to Web lets you host, monitor, and safely release your sites from one Windows machine. Give a repository to your LLM, review the proposed setup, and approve an exact Git release only after its health checks pass. Known-good static releases stay ready for rollback.
 
-![Abode to Web dashboard onboarding — Give this to your LLM](docs/assets/abode-to-web-ai-onboarding.png)
+![Abode to Web overview showing hosted sites, health, deployment activity, and Give this to your LLM onboarding](docs/assets/abode-to-web-overview-onboarding.png)
 
 The stable path serves **committed, prebuilt static output** and runs no project install, build, or start command. It needs no Docker, IIS, WSL, Linux VM, or long-running Node process. Any project command—including a build for a static site—and every Node, command, or Docker Compose adapter require the explicit `experimentalProjectExecution` opt-in.
 
