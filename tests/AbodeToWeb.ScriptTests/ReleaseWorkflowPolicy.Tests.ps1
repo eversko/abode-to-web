@@ -13,8 +13,37 @@ function Assert-Test {
 $repositoryRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $workflowPath = Join-Path $repositoryRoot '.github\workflows\release.yml'
 $workflow = Get-Content -LiteralPath $workflowPath -Raw
+$ciWorkflowPath = Join-Path $repositoryRoot '.github\workflows\ci.yml'
+$ciWorkflow = Get-Content -LiteralPath $ciWorkflowPath -Raw
 $githubGuidePath = Join-Path $repositoryRoot 'docs\GITHUB.md'
 $githubGuide = Get-Content -LiteralPath $githubGuidePath -Raw
+
+Assert-Test (-not $workflow.Contains('gitleaks/gitleaks-action', [StringComparison]::Ordinal) -and
+    -not $ciWorkflow.Contains('gitleaks/gitleaks-action', [StringComparison]::Ordinal)) `
+    'Organization workflows must use the license-free Gitleaks CLI instead of the licensed wrapper action.'
+
+foreach ($scanner in @(
+    @{
+        Name = 'CI'
+        Text = $ciWorkflow
+        Checksum = '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb'
+    },
+    @{
+        Name = 'Release'
+        Text = $workflow
+        Checksum = 'd29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e'
+    }
+)) {
+    foreach ($required in @(
+        'GITLEAKS_VERSION: 8.30.1',
+        $scanner.Checksum,
+        'https://github.com/gitleaks/gitleaks/releases/download/v',
+        'gitleaks git --no-banner --redact --exit-code 1 --log-opts=HEAD .'
+    )) {
+        Assert-Test ($scanner.Text.Contains($required, [StringComparison]::Ordinal)) `
+            "$($scanner.Name) workflow is missing pinned Gitleaks control '$required'."
+    }
+}
 
 foreach ($required in @(
     'actions: read',
@@ -55,7 +84,7 @@ foreach ($required in @(
     Assert-Test ($githubGuide.Contains($required, [StringComparison]::Ordinal)) "GitHub release guide is missing '$required'."
 }
 
-$promotion = [regex]::Match($workflow, '(?ms)^      - name: Verify trusted tag promotion\r?\n.*?(?=^      - name: Scan release source for secrets)')
+$promotion = [regex]::Match($workflow, '(?ms)^      - name: Verify trusted tag promotion\r?\n.*?(?=^      - name: Install Gitleaks CLI)')
 Assert-Test $promotion.Success 'Could not isolate the trusted tag promotion step.'
 Assert-Test ($promotion.Index -lt $workflow.IndexOf('- name: Scan release source for secrets', [StringComparison]::Ordinal)) `
     'The trusted tag promotion gate must run before package validation.'
